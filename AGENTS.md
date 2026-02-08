@@ -14,38 +14,40 @@
 *   **Language**: TypeScript (Strict Mode).
 *   **Styling**: **Tailwind CSS v4**.
     *   ⛔ **DO NOT** create a `tailwind.config.js` or `postcss.config.js`.
-    *   ✅ **DO** use CSS variables and `@theme` blocks in `index.css`.
+    *   ✅ **DO** use CSS variables and `@theme` blocks in `src/index.css`.
 *   **Icons**: `lucide-react`.
 *   **PWA**: `vite-plugin-pwa`.
 
 ## 3. Directory Structure
-This project uses a **flat structure** (source files in root), not a nested `src/` folder.
+This project uses a standard **src/** folder structure.
 
 ```text
 /
-├── agents/           # Markdown files defining AI personas (System Prompts)
-├── components/       # React UI components
-├── services/         # Business logic (Ollama API, IndexedDB, Agent loading)
-├── App.tsx           # Main application logic
-├── index.tsx         # Entry point
-├── index.html        # HTML entry
-├── types.ts          # Shared TypeScript interfaces
-└── index.css         # Tailwind v4 entry and global styles
+├── src/
+│   ├── components/       # React UI components
+│   ├── services/         # Business logic (Ollama API, IndexedDB)
+│   ├── App.tsx           # Main application logic
+│   ├── constants.ts      # Global constants and Agent definitions
+│   ├── index.tsx         # Entry point
+│   ├── types.ts          # Shared TypeScript interfaces
+│   └── index.css         # Tailwind v4 entry and global styles
+├── index.html            # HTML entry (points to src/index.tsx)
+└── vite.config.ts        # Vite configuration
 ```
 
 ## 4. Key Architectural Patterns
 
 ### A. The Agent System
-Agents are defined as Markdown (`.md`) files in the `agents/` directory.
-- **Loading**: `services/agentService.ts` uses `import.meta.glob` with `?raw` to load these files at build time.
-- **Rule**: If adding a new agent, simply create `agents/new-agent-name.md`. The service picks it up automatically.
+Agents are defined as constants in `src/constants.ts`.
+- **Definition**: The `AGENTS` array contains preset system prompts.
+- **Rule**: If adding a new agent, add it to the `AGENTS` array in `src/constants.ts`.
 
-### B. Ollama Integration (`ollamaService.ts`)
+### B. Ollama Integration (`src/services/ollamaService.ts`)
 - The app streams responses using the `fetch` API and `ReadableStream`.
 - **CORS**: The app assumes the user has set `OLLAMA_ORIGINS="*"` on their local machine.
 - **Error Handling**: Network errors usually mean Ollama is not running. Handle this gracefully.
 
-### C. Chat History (`historyService.ts`)
+### C. Chat History (`src/services/historyService.ts`)
 - **Storage**: We use raw `IndexedDB`, wrapped in a Promise-based service.
 - **No External DB Libs**: Do not install `Dexie.js` or `localforage`. Maintain the native implementation to keep bundle size low.
 
@@ -62,28 +64,27 @@ Agents are defined as Markdown (`.md`) files in the `agents/` directory.
 - All SVG icons must come from `lucide-react`.
 
 ### TypeScript
-- No `any` types unless interacting with obscure browser APIs (like `import.meta.glob`).
-- Define all shared interfaces in `types.ts`.
+- No `any` types unless interacting with obscure browser APIs.
+- Define all shared interfaces in `src/types.ts`.
 
 ## 6. Critical "Do Not Break" Rules
-1.  **Do not move source files to `src/`**. The build system expects them in the root.
+1.  **Do not move source files out of `src/`**. The build system expects them there.
 2.  **Do not break PWA support**. Ensure `PWAInstallButton.tsx` and `ReloadPrompt.tsx` remain functional.
 3.  **Do not add heavy dependencies**. This is a lightweight local interface.
-4.  **Do not remove the `import.meta` casting** in `agentService.ts`. It is required for Vite glob imports to work with TypeScript.
 
 ## 7. Common Tasks
 
 **Adding a new Feature**:
-1.  Define types in `types.ts`.
-2.  Create logic in `services/`.
-3.  Create UI in `components/`.
-4.  Integrate in `App.tsx`.
+1.  Define types in `src/types.ts`.
+2.  Create logic in `src/services/`.
+3.  Create UI in `src/components/`.
+4.  Integrate in `src/App.tsx`.
 
 **Adding a new Agent**:
-1.  Create `agents/mypersona.md`.
-2.  Write the system prompt.
+1.  Open `src/constants.ts`.
+2.  Add a new object to the `AGENTS` array.
 3.  That's it.
 
 **Updating Tailwind Config**:
-1.  Edit `index.css`.
+1.  Edit `src/index.css`.
 2.  Add variables to the `@theme` block.
