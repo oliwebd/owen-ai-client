@@ -1,6 +1,6 @@
 import { Agent } from './types';
 
-export const DEFAULT_MODEL = "qwen2.5-coder:1.5b";
+export const DEFAULT_MODEL = "qwen3:0.6b";
 export const DEFAULT_HOST = "http://localhost:11434";
 
 export const AGENTS: Agent[] = [

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { OllamaService } from './services/ollamaService';
 import { historyService } from './services/historyService';
-import { Message, Role, OllamaConfig, ChatSession, Agent } from './types';
+import { Message, Role, OllamaConfig, ChatSession } from './types';
 import { AGENTS, DEFAULT_HOST, DEFAULT_MODEL } from './constants';
 import { MessageBubble } from './components/MessageBubble';
 import { SendIcon, StopIcon, SettingsIcon, SunIcon, MoonIcon, MenuIcon, PlusIcon } from './components/Icons';
@@ -27,6 +27,7 @@ function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
   
   // UI state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -130,12 +131,14 @@ function App() {
     setMessages([]);
     setCurrentSessionId(null);
     setInput('');
+    setStreamingMessageId(null);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
   const loadSession = async (session: ChatSession) => {
     setMessages(session.messages);
     setCurrentSessionId(session.id);
+    setStreamingMessageId(null);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
@@ -207,6 +210,7 @@ function App() {
     }
 
     const assistantMessageId = Date.now() + 1;
+    setStreamingMessageId(assistantMessageId);
     const placeholderMessage: Message = { role: Role.Assistant, content: '', timestamp: assistantMessageId };
     
     setMessages(prev => [...prev, placeholderMessage]);
@@ -254,6 +258,7 @@ function App() {
     } finally {
       setIsLoading(false);
       setIsStreaming(false);
+      setStreamingMessageId(null);
     }
   };
 
@@ -261,6 +266,7 @@ function App() {
     ollamaService.current.cancelRequest();
     setIsLoading(false);
     setIsStreaming(false);
+    setStreamingMessageId(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -406,7 +412,11 @@ function App() {
           ) : (
             <>
               {messages.map((msg, idx) => (
-                <MessageBubble key={idx} message={msg} />
+                <MessageBubble 
+                  key={idx} 
+                  message={msg} 
+                  isStreaming={isStreaming && msg.timestamp === streamingMessageId}
+                />
               ))}
               <div ref={messagesEndRef} />
             </>
