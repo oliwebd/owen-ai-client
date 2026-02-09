@@ -1,6 +1,4 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
 
 @theme {
   --font-sans: 'Inter', sans-serif;
@@ -9,16 +7,12 @@
   --color-gray-900: #111827;
   --color-gray-950: #030712;
   
-  /* Existing animations */
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  
-  /* New bot animations */
   --animate-bot-blink: bot-blink 3s ease-in-out infinite;
   --animate-thinking-dot: thinking-dot 1.4s ease-in-out infinite;
   --animate-fade-in: fade-in 0.5s ease-out;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -49,7 +43,6 @@
   background: #475569; 
 }
 
-/* Existing typing dot animation */
 .typing-dot {
   animation: typing 1.4s infinite ease-in-out both;
 }
@@ -71,7 +64,6 @@
   }
 }
 
-/* New bot animations */
 @keyframes bot-blink {
   0%, 90%, 100% {
     opacity: 0;
@@ -103,7 +95,6 @@
   }
 }
 
-/* Base styles for markdown content if not covered by prose */
 .prose pre {
   margin: 0;
   border-radius: 0;
