@@ -98,21 +98,21 @@ function App() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const fetchModels = async () => {
-    const models = await ollamaService.current.getModels();
-    setAvailableModels(models);
-    if (models.length > 0) {
-      const exactMatch = models.includes(config.model);
-      if (!exactMatch) {
-        const partialMatch = models.find(m => m.includes(config.model));
-        if (partialMatch) {
-           setConfig(prev => ({ ...prev, model: partialMatch }));
-        } else {
-           setConfig(prev => ({ ...prev, model: models[0] }));
-        }
+  const fetchModels = async (forceRefresh: boolean = false) => {
+  const models = await ollamaService.current.getModels(forceRefresh);
+  setAvailableModels(models);
+  if (models.length > 0) {
+    const exactMatch = models.includes(config.model);
+    if (!exactMatch) {
+      const partialMatch = models.find(m => m.includes(config.model));
+      if (partialMatch) {
+         setConfig(prev => ({ ...prev, model: partialMatch }));
+      } else {
+         setConfig(prev => ({ ...prev, model: models[0] }));
       }
     }
-  };
+  }
+};
 
   const checkOllamaConnection = async () => {
     setConnectionStatus('checking');
