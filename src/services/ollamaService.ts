@@ -23,6 +23,77 @@ interface OllamaStreamResponse {
   error?: string;
 }
 
+// IndexedDB cache for models
+const MODELS_DB_NAME = 'OwenAI_Models_Cache';
+const MODELS_STORE_NAME = 'models';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
+interface ModelsCache {
+  baseUrl: string;
+  models: string[];
+  timestamp: number;
+}
+
+const openModelsDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(MODELS_DB_NAME, 1);
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(MODELS_STORE_NAME)) {
+        db.createObjectStore(MODELS_STORE_NAME, { keyPath: 'baseUrl' });
+      }
+    };
+    
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const getCachedModels = async (baseUrl: string): Promise<string[] | null> => {
+  try {
+    const db = await openModelsDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(MODELS_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(MODELS_STORE_NAME);
+      const request = store.get(baseUrl);
+      
+      request.onsuccess = () => {
+        const cache: ModelsCache | undefined = request.result;
+        if (cache && Date.now() - cache.timestamp < CACHE_DURATION) {
+          resolve(cache.models);
+        } else {
+          resolve(null);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return null;
+  }
+};
+
+const setCachedModels = async (baseUrl: string, models: string[]): Promise<void> => {
+  try {
+    const db = await openModelsDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(MODELS_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(MODELS_STORE_NAME);
+      const cache: ModelsCache = {
+        baseUrl,
+        models,
+        timestamp: Date.now()
+      };
+      const request = store.put(cache);
+      
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.warn('Failed to cache models:', e);
+  }
+};
+
 export class OllamaService {
   private config: OllamaConfig;
   private abortController: AbortController | null = null;
@@ -36,9 +107,17 @@ export class OllamaService {
   }
 
   /**
-   * Fetches the list of available models from Ollama.
+   * Fetches the list of available models from Ollama with caching.
    */
-  async getModels(): Promise<string[]> {
+  async getModels(forceRefresh: boolean = false): Promise<string[]> {
+    // Check cache first unless forced refresh
+    if (!forceRefresh) {
+      const cached = await getCachedModels(this.config.baseUrl);
+      if (cached) {
+        return cached;
+      }
+    }
+
     try {
       const res = await fetch(`${this.config.baseUrl}/api/tags`, {
         signal: AbortSignal.timeout(5000) // 5 second timeout
@@ -50,7 +129,12 @@ export class OllamaService {
       }
       
       const data: OllamaModelsResponse = await res.json();
-      return (data.models || []).map((m) => m.name);
+      const models = (data.models || []).map((m) => m.name);
+      
+      // Cache the results
+      await setCachedModels(this.config.baseUrl, models);
+      
+      return models;
     } catch (e) {
       // Suppress error logging for connection probes to avoid console noise
       if (e instanceof Error && e.name !== 'TimeoutError') {
@@ -79,6 +163,12 @@ export class OllamaService {
       
       const data: OllamaModelsResponse = await res.json();
       const models = data.models || [];
+      
+      // Cache models from connection check
+      await setCachedModels(
+        this.config.baseUrl, 
+        models.map(m => m.name)
+      );
       
       // Improved model matching: exact match or with :latest suffix
       const normalizedConfigModel = this.config.model.replace(':latest', '');
