@@ -355,14 +355,16 @@ function App() {
             {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
           </button>
           
-          <button 
-            onClick={() => {
-              fetchModels();
-              setIsSettingsOpen(true);
-            }}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Settings"
-          >
+<button 
+  onClick={() => {
+    fetchModels(true);
+    setIsSettingsOpen(true);
+  }}
+  className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+  title="Settings"
+>
+  <SettingsIcon className="w-5 h-5" />
+</button>
             <SettingsIcon className="w-5 h-5" />
           </button>
         </div>
@@ -465,15 +467,15 @@ function App() {
         </div>
       </div>
 
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)}
-        config={config}
-        onSave={setConfig}
-        availableModels={availableModels}
-        agents={AGENTS}
-        onRefreshModels={fetchModels}
-      />
+  <SettingsModal 
+  isOpen={isSettingsOpen} 
+  onClose={() => setIsSettingsOpen(false)}
+  config={config}
+  onSave={setConfig}
+  availableModels={availableModels}
+  agents={AGENTS}
+  onRefreshModels={() => fetchModels(true)}
+  />
     </div>
   );
 }
